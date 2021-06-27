@@ -24,10 +24,36 @@ class crossbar(val is_double_width: Boolean)(implicit val conf : HBMGraphConfigu
       val in = Vec(conf.numSubGraphs, Flipped(Decoupled(UInt(cb_datawidth))))
       val out = Vec(conf.numSubGraphs, Decoupled(UInt(cb_datawidth)))
     })
-    if (conf.numSubGraphs < 64){
+    if (conf.numSubGraphs < 32 || (conf.numSubGraphs == 32 && conf.multi_32 == 0)){
         val sub_crossbar = Module(new sub_crossbar(is_double_width, conf.numSubGraphs, 1, 0,conf.sub_crossbar_size))
         io.in <> sub_crossbar.io.in
         io.out <> sub_crossbar.io.out
+    }
+    else if(conf.numSubGraphs == 32 && conf.multi_32 == 1){
+        val crossbar_array_in = new Array[sub_crossbar](8)
+        val crossbar_array_second = new Array[sub_crossbar](8)
+        val crossbar_array_out = new Array[sub_crossbar](16)
+        for(i <- 0 until 8){
+            crossbar_array_in(i) = Module(new sub_crossbar(is_double_width, 4, 1, 0, 4))
+            crossbar_array_second(i) = Module(new sub_crossbar(is_double_width, 16, 4, i % 4, 4))
+        }
+        for(i <- 0 until 16){
+            crossbar_array_out(i) = Module(new sub_crossbar(is_double_width, 32, 16, i, 2))
+
+        }
+        
+        for(i <- 0 until 8){
+            for(j <- 0 until 4){
+                crossbar_array_in(i).io.in(j)       <> io.in(i * 4 + j)
+                crossbar_array_in(i).io.out(j)      <> crossbar_array_second((i / 4) * 4 + j).io.in(i % 4)
+                crossbar_array_second(i).io.out(j)  <> crossbar_array_out(i % 4 + j * 4).io.in(i / 4)
+            }
+        }
+        for(i <- 0 until 16){
+            for(j <- 0 until 2){
+                crossbar_array_out(i).io.out(j)     <> io.out(j * 16 + i)
+            }
+        }
     }
     else if(conf.numSubGraphs == 64){
         val crossbar_array_in = new Array[sub_crossbar](conf.sub_crossbar_number)

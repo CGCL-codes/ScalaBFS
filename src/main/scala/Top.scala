@@ -31,6 +31,10 @@ class Top(implicit val conf : HBMGraphConfiguration) extends Module{
     val kernel_count = RegInit(0.U(32.W))
     kernel_count := kernel_count + 1.U
     val reset_reg = RegNext(reset)
+    val reset_reg_array = VecInit(Seq.fill(conf.channel_num)(RegNext(reset))) //new Array[Reset](conf.channel_num)
+    // for(i <- 0 until conf.channel_num){
+    //     reset_reg_array(i) := RegNext(reset)
+    // }
     val clk_wiz = withReset(reset_reg){Module(new clk_wiz_0)}
     clk_wiz.io.clock := clock
     
@@ -38,7 +42,7 @@ class Top(implicit val conf : HBMGraphConfiguration) extends Module{
     val pipeline_array = new Array[pipeline](conf.channel_num)
     val write_finish_vec = new Array[Bool](conf.channel_num)
     for(i <- 0 until conf.channel_num) {
-        pipeline_array(i) = withReset(reset_reg){Module(new pipeline(i))}
+        pipeline_array(i) = withReset(reset_reg_array(i)){Module(new pipeline(i))}
     }
 
 
@@ -47,6 +51,21 @@ class Top(implicit val conf : HBMGraphConfiguration) extends Module{
     master.io.levels <> io.levels
     val crossbar_array_mem = new Array[crossbar](2)
     val crossbar_array_visit = new Array[crossbar](2)
+
+
+    val copy_start = Module(new copy(1))
+    val copy_global_finish = Module(new copy(1))
+    val copy_frontier_flag = Module(new copy(1))
+    val copy_current_level = Module(new copy(32))
+    val copy_p2_end = Module(new copy(1))
+    val copy_push_or_pull = Module(new copy(1))
+    copy_start.io.in := master.io.start
+    copy_global_finish.io.in := master.io.global_finish
+    copy_frontier_flag.io.in := master.io.frontier_flag
+    copy_current_level.io.in := master.io.current_level
+    copy_p2_end.io.in := master.io.p2_end
+    copy_push_or_pull.io.in := master.io.push_or_pull
+
     when(io.if_write===1.U){
       if_write_state := true.B
     }.otherwise{
@@ -71,19 +90,20 @@ class Top(implicit val conf : HBMGraphConfiguration) extends Module{
         master.io.last_iteration_state(i) := pipeline_array(i).io.last_iteration
         //kernel count
         pipeline_array(i).io.kernel_count := kernel_count
-        pipeline_array(i).io.master_finish := master.io.global_finish
+        pipeline_array(i).io.master_finish := copy_global_finish.io.out(i)
         
-        pipeline_array(i).io.p2_end := master.io.p2_end
-        pipeline_array(i).io.start := master.io.start
-        pipeline_array(i).io.frontier_flag := master.io.frontier_flag
-        pipeline_array(i).io.level := master.io.current_level
+        pipeline_array(i).io.p2_end := copy_p2_end.io.out(i)
+        pipeline_array(i).io.start := copy_start.io.out(i)
+        pipeline_array(i).io.frontier_flag := copy_frontier_flag.io.out(i)
+        pipeline_array(i).io.level := copy_current_level.io.out(i)
         pipeline_array(i).io.offsets <> io.offsets
         // pipeline_array(i).io.node_num <> (io.node_num + conf.numSubGraphs.U - 1.U - i.U) / conf.numSubGraphs.U
         pipeline_array(i).io.node_num <> io.node_num
-        pipeline_array(i).io.push_or_pull := master.io.push_or_pull     // pure pull
+        pipeline_array(i).io.push_or_pull := copy_push_or_pull.io.out(i)     // pure pull
         pipeline_array(i).io.if_write := if_write_state  // pure pull
         write_finish_vec(i) = pipeline_array(i).io.write_finish
 
+        
         for(j <- 0 until 2){
             for(k <- 0 until conf.pipe_num_per_channel){
                 crossbar_array_mem(j).io.in(conf.channel_num * k + i)  <> pipeline_array(i).io.mem_out(2 * k + j)
@@ -92,7 +112,7 @@ class Top(implicit val conf : HBMGraphConfiguration) extends Module{
             // crossbar_array_mem(j).io.in(i)  <> pipeline_array(i).io.mem_out(j)
             // crossbar_array_mem(j).io.out(i) <> pipeline_array(i).io.p2_in(j)  
             // TODO
-                when(master.io.push_or_pull === 0.U){ // push mode
+                when(RegNext(master.io.push_or_pull) === 0.U){ // push mode
                     crossbar_array_visit(j).io.in(conf.channel_num * k + i)  <> DontCare
                     crossbar_array_visit(j).io.out(conf.channel_num * k + i) <> DontCare
                     crossbar_array_visit(j).io.in(conf.channel_num * k + i).valid := false.B
@@ -109,7 +129,7 @@ class Top(implicit val conf : HBMGraphConfiguration) extends Module{
     master.io.global_start := start_state
     val master_finish_count = RegInit(0.U(8.W))
     val global_write_finish = RegNext(write_finish_vec.reduce(_&&_))
-    when(global_write_finish){
+    when(global_write_finish){// && master_finish_count < 210.U){
         master_finish_count := master_finish_count + 1.U
     }
 
@@ -122,7 +142,7 @@ class Top(implicit val conf : HBMGraphConfiguration) extends Module{
     when(io.ap_start_pulse){
         kernel_count := 0.U
         start_state := true.B
-    }.elsewhen(master.io.global_finish){
+    }.elsewhen(RegNext(master.io.global_finish)){
         start_state := false.B
     }
 }
@@ -277,6 +297,8 @@ class pipeline(val num: Int)(implicit val conf : HBMGraphConfiguration) extends 
         frontier(i).io.write_frontier(1) <> io.frontier_in(2 * i + 1)
 
         p2(i).io.bram_to_frontier     <> frontier(i).io.bram_from_p2
+        p2(i).io.visited_map_or_frontier(0) <> frontier(i).io.frontier_to_p2(0)
+        p2(i).io.visited_map_or_frontier(1) <> frontier(i).io.frontier_to_p2(1)
     }
 
 

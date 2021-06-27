@@ -10,6 +10,7 @@ class P2_IO (implicit val conf : HBMGraphConfiguration) extends Bundle{
     val bram_clock = Input(Clock())  // bram clock
     val push_or_pull_state = Input(UInt(1.W))   //input flag mark push or pull state
     val if_write = Input(Bool())
+    val visited_map_or_frontier = Vec(2, Flipped(Decoupled(UInt(1.W))))    // input 2 neighbours in local subgraph
 
     //Output
     val p2_count = Output(UInt(conf.Data_width.W))
@@ -18,7 +19,8 @@ class P2_IO (implicit val conf : HBMGraphConfiguration) extends Bundle{
     // write next_frontier in push mode
     // write next_frontier and visited_map in pull mode
     val write_frontier = Vec(2, Decoupled(UInt(conf.Data_width.W)))         // output 2 next_frontier you want to write
-    val bram_to_frontier = Flipped(new bram_controller_IO)
+    val bram_to_frontier = Vec(2, Decoupled(UInt(conf.Data_width_p2_to_f.W)))
+    
 }
 
 class P2 (val num :Int)(implicit val conf : HBMGraphConfiguration) extends Module{
@@ -31,7 +33,19 @@ class P2 (val num :Int)(implicit val conf : HBMGraphConfiguration) extends Modul
     // p2_read_visited_map_or_frontier.io.bram_to_frontier.start := io.start
     p2_read_visited_map_or_frontier.io.bram_clock := io.bram_clock
     p2_read_visited_map_or_frontier.io.neighbours <> io.neighbours
-    p2_read_visited_map_or_frontier.io.bram_to_frontier <> io.bram_to_frontier
+    val q_bram_to_frontier_0_l1 = Queue(p2_read_visited_map_or_frontier.io.bram_to_frontier(0), 2)
+    val q_bram_to_frontier_0_l2 = Queue(q_bram_to_frontier_0_l1,2)
+    // val q_bram_to_frontier_0_l3 = Queue(q_bram_to_frontier_0_l2,1)
+    // val q_bram_to_frontier_0_l4 = Queue(q_bram_to_frontier_0_l3,1)
+
+    val q_bram_to_frontier_1_l1 = Queue(p2_read_visited_map_or_frontier.io.bram_to_frontier(1), 2)
+    val q_bram_to_frontier_1_l2 = Queue(q_bram_to_frontier_1_l1,2)
+    // val q_bram_to_frontier_1_l3 = Queue(q_bram_to_frontier_1_l2,1)
+    // val q_bram_to_frontier_1_l4 = Queue(q_bram_to_frontier_1_l3,1)
+
+    Queue(q_bram_to_frontier_0_l2, 4) <> io.bram_to_frontier(0)
+    Queue(q_bram_to_frontier_1_l2, 4) <> io.bram_to_frontier(1)
+    // Queue(p2_read_visited_map_or_frontier.io.frontier_to_p2, 4) <> io.frontier_to_p2
     p2_read_visited_map_or_frontier.io.push_or_pull_state := io.push_or_pull_state
 
     
@@ -43,11 +57,23 @@ class P2 (val num :Int)(implicit val conf : HBMGraphConfiguration) extends Modul
 
     // write_frontier_and_level.io.visited_map_or_frontier(0) <> queue_1
     // write_frontier_and_level.io.visited_map_or_frontier(1) <> queue_3
-    write_frontier_and_level.io.visited_map_or_frontier(0) <> Queue(p2_read_visited_map_or_frontier.io.visited_map_or_frontier(0), conf.q_visited_map_len)
-    write_frontier_and_level.io.visited_map_or_frontier(1) <> Queue(p2_read_visited_map_or_frontier.io.visited_map_or_frontier(1), conf.q_visited_map_len)
+    val q_visited_map_or_frontier_0_l1 = Queue(io.visited_map_or_frontier(0), 2)
+    val q_visited_map_or_frontier_0_l2 = Queue(q_visited_map_or_frontier_0_l1, 2)
+    // val q_visited_map_or_frontier_0_l3 = Queue(q_visited_map_or_frontier_0_l2, 1)
+    // val q_visited_map_or_frontier_0_l4 = Queue(q_visited_map_or_frontier_0_l3, 1)
 
-    write_frontier_and_level.io.neighbours(0) <> p2_read_visited_map_or_frontier.io.neighbours_out(0)    // the FIFO queue is in module p2_read_visited_map_or_frontier
-    write_frontier_and_level.io.neighbours(1) <> p2_read_visited_map_or_frontier.io.neighbours_out(1)
+    val q_visited_map_or_frontier_1_l1 = Queue(io.visited_map_or_frontier(1), 2)
+    val q_visited_map_or_frontier_1_l2 = Queue(q_visited_map_or_frontier_1_l1, 2)
+    // val q_visited_map_or_frontier_1_l3 = Queue(q_visited_map_or_frontier_1_l2, 1)
+    // val q_visited_map_or_frontier_1_l4 = Queue(q_visited_map_or_frontier_1_l3, 1)
+
+    write_frontier_and_level.io.visited_map_or_frontier(0) <> Queue(q_visited_map_or_frontier_0_l2, conf.q_visited_map_len)
+    write_frontier_and_level.io.visited_map_or_frontier(1) <> Queue(q_visited_map_or_frontier_1_l2, conf.q_visited_map_len)
+    
+
+
+    write_frontier_and_level.io.neighbours(0) <> Queue(p2_read_visited_map_or_frontier.io.neighbours_out(0), conf.q_neighbours_len)    // the FIFO queue is in module p2_read_visited_map_or_frontier
+    write_frontier_and_level.io.neighbours(1) <> Queue(p2_read_visited_map_or_frontier.io.neighbours_out(1), conf.q_neighbours_len)
 
     // connect between p2 io and write_frontier_and_level
     // write_frontier_and_level.io.start := io.start
@@ -69,17 +95,19 @@ class p2_read_visited_map_or_frontier (val num :Int)(implicit val conf : HBMGrap
         val push_or_pull_state = Input(UInt(1.W))   //input flag mark push or pull state
 
         //Output
-        val visited_map_or_frontier = Vec(2, Decoupled(UInt(1.W))) // output 2 visited_map result in push mode or frontier result in pull mode
+        // val visited_map_or_frontier = Vec(2, Decoupled(UInt(1.W))) // output 2 visited_map result in push mode or frontier result in pull mode
         val neighbours_out = Vec(2, Decoupled(UInt((conf.Data_width * 2).W)))    // output 2 neighbours in local subgraph
-        val bram_to_frontier = Flipped(new bram_controller_IO)
+        // val bram_to_frontier = Flipped(new bram_controller_IO)
+        val bram_to_frontier = Vec(2, Decoupled(UInt(conf.Data_width_p2_to_f.W)))
+        // val frontier_to_p2 = Flipped(Decoupled(UInt((conf.Data_width_bram * 2).W)))
     })
     dontTouch(io)
 
     // init signals
-    io.visited_map_or_frontier(0).valid := false.B
-    io.visited_map_or_frontier(1).valid := false.B
-    io.visited_map_or_frontier(0).bits := DontCare
-    io.visited_map_or_frontier(1).bits := DontCare
+    // io.visited_map_or_frontier(0).valid := false.B
+    // io.visited_map_or_frontier(1).valid := false.B
+    // io.visited_map_or_frontier(0).bits := DontCare
+    // io.visited_map_or_frontier(1).bits := DontCare
 
     // local variables
     val count0 = RegInit(0.U(conf.Data_width.W)) // count the number of neighbour0 received
@@ -126,15 +154,47 @@ class p2_read_visited_map_or_frontier (val num :Int)(implicit val conf : HBMGrap
     // val visited_req1 = ShiftRegister(Mux(q_neighbour1.io.deq.valid && io.visited_map(1).ready, 1.U(1.W), 0.U(1.W)), 1,0.U(4.W), true.B)  
 
     // val visited_map = withClock(io.bram_clock){Module(new bram_controller(num, 0))}
-    io.bram_to_frontier := DontCare
-    io.bram_to_frontier.ena := true.B
-    io.bram_to_frontier.enb := true.B
-    io.bram_to_frontier.clka := io.bram_clock
-    io.bram_to_frontier.clkb := io.bram_clock
-    io.bram_to_frontier.wea := false.B
-    io.bram_to_frontier.web := false.B
-    io.bram_to_frontier.wmode := 0.U
+    
 
+    // io.bram_to_frontier := DontCare
+    // io.bram_to_frontier.ena := true.B
+    // io.bram_to_frontier.enb := true.B
+    // io.bram_to_frontier.clka := io.bram_clock
+    // io.bram_to_frontier.clkb := io.bram_clock
+    // io.bram_to_frontier.wea := false.B
+    // io.bram_to_frontier.web := false.B
+    // io.bram_to_frontier.wmode := 0.U
+
+    // val valid_a = Wire(UInt(1.W))
+    // val valid_b = Wire(UInt(1.W))
+
+    val bram_to_frontier_addra = Wire(UInt(conf.Addr_width.W))
+    val bram_to_frontier_addrb = Wire(UInt(conf.Addr_width.W))
+    val bram_to_frontier_wea = Wire(UInt(1.W))
+    val bram_to_frontier_web = Wire(UInt(1.W))
+    // val bram_to_frontier_wmode = Wire(UInt(1.W))
+    val bram_to_frontier_nodea = Wire(UInt(conf.Node_width.W))
+    val bram_to_frontier_nodeb = Wire(UInt(conf.Node_width.W))
+
+    val bram_to_frontier_0 = Wire(UInt(conf.Data_width_p2_to_f.W))
+    val bram_to_frontier_1 = Wire(UInt(conf.Data_width_p2_to_f.W))
+    
+    // bram_to_frontier_wmode := 0.U
+    bram_to_frontier_wea := 0.U
+    bram_to_frontier_web := 0.U
+    bram_to_frontier_addra := 0.U
+    bram_to_frontier_addrb := 0.U
+    bram_to_frontier_nodea := 0.U
+    bram_to_frontier_nodeb := 0.U
+    // valid_a := 0.U
+    // valid_b := 0.U
+
+    bram_to_frontier_0 := Cat(bram_to_frontier_addra, bram_to_frontier_wea, bram_to_frontier_nodea)
+    bram_to_frontier_1 := Cat(bram_to_frontier_addrb, bram_to_frontier_web, bram_to_frontier_nodeb)
+    io.bram_to_frontier(0).bits := bram_to_frontier_0
+    io.bram_to_frontier(0).valid := false.B
+    io.bram_to_frontier(1).bits := bram_to_frontier_1
+    io.bram_to_frontier(1).valid := false.B
     // receive neighbours and require visited_map
     // deal neighbour0
     
@@ -143,28 +203,56 @@ class p2_read_visited_map_or_frontier (val num :Int)(implicit val conf : HBMGrap
         Because the data read from bram cannot be paused, only when there is room for the queue 
         that stores the result read in bram, the new data will continue to be processed.
      */
-    when(q_neighbour0.io.deq.valid && io.visited_map_or_frontier(0).ready){
-        q_neighbour0.io.deq.ready := true.B
-        // only need to read in push mode
-        io.bram_to_frontier.wea := true.B && (io.push_or_pull_state === 0.U)
-        // convert the total number of points to the number inside the pipeline
-        io.bram_to_frontier.nodea := (Custom_function2.high(q_neighbour0.io.deq.bits) / conf.numSubGraphs.U) % conf.Data_width_bram.U
-        io.bram_to_frontier.addra := (Custom_function2.high(q_neighbour0.io.deq.bits) / conf.numSubGraphs.U) / conf.Data_width_bram.U
-        // TODO 检查直接不延迟,直接读dout(node)的数据，在bram的第二拍是正确的，待检测在流水线中是否正确
-        io.visited_map_or_frontier(0).valid := true.B
-        io.visited_map_or_frontier(0).bits := io.bram_to_frontier.douta((Custom_function2.high(q_neighbour0.io.deq.bits) / conf.numSubGraphs.U) % conf.Data_width_bram.U)
-        count0 := count0 + 1.U
-    }
 
-    when(q_neighbour1.io.deq.valid && io.visited_map_or_frontier(1).ready){
-        q_neighbour1.io.deq.ready := true.B
-        io.bram_to_frontier.web := true.B && (io.push_or_pull_state === 0.U)
-        io.bram_to_frontier.nodeb := (Custom_function2.high(q_neighbour1.io.deq.bits) / conf.numSubGraphs.U) % conf.Data_width_bram.U
-        io.bram_to_frontier.addrb := (Custom_function2.high(q_neighbour1.io.deq.bits) / conf.numSubGraphs.U) / conf.Data_width_bram.U
-        io.visited_map_or_frontier(1).valid := true.B
-        io.visited_map_or_frontier(1).bits := io.bram_to_frontier.doutb((Custom_function2.high(q_neighbour1.io.deq.bits) / conf.numSubGraphs.U) % conf.Data_width_bram.U)
-        count1 := count1 + 1.U
+    // 将数据拼合成一个UInt传输到frontier，q_neighbour0和1分别对应bram_to_frontier0和1
+    when(io.bram_to_frontier(0).ready && q_neighbour0.io.deq.valid){
+            q_neighbour0.io.deq.ready := true.B
+            io.bram_to_frontier(0).valid := true.B
+            // only need to read in push mode
+            bram_to_frontier_wea := true.B && (io.push_or_pull_state === 0.U)
+            // valid_a := 1.U
+
+            // convert the total number of points to the number inside the pipeline
+            bram_to_frontier_nodea := (Custom_function2.high(q_neighbour0.io.deq.bits) / conf.numSubGraphs.U) % conf.Data_width_bram.U
+            bram_to_frontier_addra := (Custom_function2.high(q_neighbour0.io.deq.bits) / conf.numSubGraphs.U) / conf.Data_width_bram.U
     }
+    .otherwise{
+        io.bram_to_frontier(0).valid := false.B
+    }
+    when(io.bram_to_frontier(1).ready && q_neighbour1.io.deq.valid){
+            q_neighbour1.io.deq.ready := true.B
+            io.bram_to_frontier(1).valid := true.B
+            bram_to_frontier_web := true.B && (io.push_or_pull_state === 0.U)
+            // valid_b := 1.U
+            bram_to_frontier_nodeb := (Custom_function2.high(q_neighbour1.io.deq.bits) / conf.numSubGraphs.U) % conf.Data_width_bram.U
+            bram_to_frontier_addrb := (Custom_function2.high(q_neighbour1.io.deq.bits) / conf.numSubGraphs.U) / conf.Data_width_bram.U
+    }
+    .otherwise{
+        io.bram_to_frontier(1).valid := false.B
+    }
+    
+    // when(q_neighbour0.io.deq.valid && io.visited_map_or_frontier(0).ready){
+    //     q_neighbour0.io.deq.ready := true.B
+    //     // only need to read in push mode
+    //     io.bram_to_frontier.wea := true.B && (io.push_or_pull_state === 0.U)
+    //     // convert the total number of points to the number inside the pipeline
+    //     io.bram_to_frontier.nodea := (Custom_function2.high(q_neighbour0.io.deq.bits) / conf.numSubGraphs.U) % conf.Data_width_bram.U
+    //     io.bram_to_frontier.addra := (Custom_function2.high(q_neighbour0.io.deq.bits) / conf.numSubGraphs.U) / conf.Data_width_bram.U
+    //     // TODO 检查直接不延迟,直接读dout(node)的数据，在bram的第二拍是正确的，待检测在流水线中是否正确
+    //     io.visited_map_or_frontier(0).valid := true.B
+    //     io.visited_map_or_frontier(0).bits := io.bram_to_frontier.douta((Custom_function2.high(q_neighbour0.io.deq.bits) / conf.numSubGraphs.U) % conf.Data_width_bram.U)
+    //     count0 := count0 + 1.U
+    // }
+
+    // when(q_neighbour1.io.deq.valid && io.visited_map_or_frontier(1).ready){
+    //     q_neighbour1.io.deq.ready := true.B
+    //     io.bram_to_frontier.web := true.B && (io.push_or_pull_state === 0.U)
+    //     io.bram_to_frontier.nodeb := (Custom_function2.high(q_neighbour1.io.deq.bits) / conf.numSubGraphs.U) % conf.Data_width_bram.U
+    //     io.bram_to_frontier.addrb := (Custom_function2.high(q_neighbour1.io.deq.bits) / conf.numSubGraphs.U) / conf.Data_width_bram.U
+    //     io.visited_map_or_frontier(1).valid := true.B
+    //     io.visited_map_or_frontier(1).bits := io.bram_to_frontier.doutb((Custom_function2.high(q_neighbour1.io.deq.bits) / conf.numSubGraphs.U) % conf.Data_width_bram.U)
+    //     count1 := count1 + 1.U
+    // }
 
     // // store the data read from bram into FIFO queue
     // when(visited_req0 === 1.U){

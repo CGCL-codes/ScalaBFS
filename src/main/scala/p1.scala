@@ -111,7 +111,13 @@ class read_R_array_index (val num :Int)(implicit val conf : HBMGraphConfiguratio
     // local variables
     val state0 ::state1 :: state2 :: state3 :: Nil = Enum(4)
     val stateReg = RegInit(state0) // mark state of read R array
-    val q_frontier_value = Queue(io.frontier_value, conf.q_frontier_to_p1_len)  // use a FIFO queue to receive data
+    val q_frontier_value_l1 = Queue(io.frontier_value, 2)
+    val q_frontier_value_l2 = Queue(q_frontier_value_l1, 2)
+    // val q_frontier_value_l3 = Queue(q_frontier_value_l2, 1)
+    // val q_frontier_value_l4 = Queue(q_frontier_value_l3, 1)
+    val q_frontier_value = Queue(q_frontier_value_l2, conf.q_frontier_to_p1_len)  // use a FIFO queue to receive data
+    
+    
     // dontTouch(q_frontier_value) // to prevent the optimization of port io_enq_bits and io_deq_bits
     val size =  ((io.node_num - 1.U) / conf.Data_width_bram.U) + 1.U // the total number of current frontier 
     val count_f = RegInit(0.U(32.W))    // count the number of frontier received

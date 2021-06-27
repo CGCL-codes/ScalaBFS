@@ -64,6 +64,7 @@ class Memory_write(val num :Int)(implicit val conf : HBMGraphConfiguration) exte
     //write address channel
     when(io.master_finish & valid_state_addr === write_count_and_max){ // write kernel_count and max_level
         valid_state_addr := write_level_arr
+        // valid_state_addr := write_done
         write_addr.bits.addr := conf.HBM_base_addr * num.asUInt()
         write_addr.valid := true.B
     }.elsewhen(write_addr_flag){ // write HBM addr
@@ -78,6 +79,8 @@ class Memory_write(val num :Int)(implicit val conf : HBMGraphConfiguration) exte
     //write data channel
     when(io.master_finish && (valid_state_data === write_count_and_max) && write_data.ready){ 
         valid_state_data := write_level_arr
+        // valid_state_data := write_done
+        // io.write_finish := RegNext(true.B)
         write_data.bits.data :=  io.kernel_count | (io.level << 32)
         write_data.valid := true.B
     }.elsewhen(valid_state_data === write_level_arr && write_data.ready && uram_out_q.io.deq.valid){ //write HBM data
@@ -99,5 +102,8 @@ class Memory_write(val num :Int)(implicit val conf : HBMGraphConfiguration) exte
         valid_state_data := write_done
         io.write_finish := RegNext(true.B)
     }
+    // when(valid_state_data === write_done){
+    //     io.write_finish := true.B
+    // }
 
 }

@@ -27,6 +27,7 @@ case class HBMGraphConfiguration()
         16
     }
     val sub_crossbar_number_2 = 64
+    val multi_32 = 1 // 0
     val Data_width_uram = 72
     val Addr_width_uram = 20
     val Write_width_uram = 9
@@ -94,5 +95,89 @@ case class HBMGraphConfiguration()
     }
     val crossbar_data_width = 24
     val crossbar_connect_fifo_len = 8
+
+    val Node_width = Data_width_bram.U.getWidth - 1
+
+    val Data_width_p2_to_f = Addr_width + Node_width  + 1
+
+    val loc_addrb = Node_width * 2 + Addr_width + 3
+    val loc_addra = Node_width * 2 + Addr_width * 2 + 3
+
+    val fifo_in_depth = loc_addra + Data_width_bram * 2 + 2
+    val fifo_out_depth = Data_width_bram * 2
+
+    val node_queue_depth = 32
+
+    //将fifo generator按a，b端口拆分
+}
+
+object loc{
+    implicit val conf = HBMGraphConfiguration()
+    def addr(n : UInt) : UInt = 
+        n(conf.Data_width_p2_to_f - 1, conf.Node_width + 1)
+
+    def we(n : UInt) : UInt = 
+        n(conf.Node_width)
+
+    def node(n : UInt) : UInt = 
+        n(conf.Node_width - 1, 0)
+
+    def wmode(n : UInt) : UInt = 
+        n(conf.Data_width_p2_to_f)
+
+    def din(n : UInt) : UInt = 
+        n(conf.Data_width_p2_to_f + conf.Data_width_bram, conf.Data_width_p2_to_f + 1)
+
+    def en(n : UInt) : UInt = 
+        n(conf.Data_width_p2_to_f + conf.Data_width_bram + 1)
+
+    def no_read(n : UInt) : UInt = 
+        n(conf.Data_width_p2_to_f + conf.Data_width_bram + 2)
+    // def valida(n : UInt) : UInt = 
+    //     n(conf.Data_width_p2_to_f - 1)
+
+    // def validb(n : UInt) : UInt = 
+    //     n(conf.Data_width_p2_to_f - 2)
+        // io.ena, io.addra, io.dina, io.wea, 
+        // io.enb, io.addrb(), io.dinb(Node_width*2+2 - Node_width*2 + Data_width_bram +1), io.web(Node_width*2+1), 
+        // io.wmode(Node_width*2), io.nodea(Node_width-Node_width*2-1), io.nodeb (0-Node_width-1)
+    // def nodeb(n : UInt) : UInt = 
+    //     n(conf.Node_width - 1, 0)
+
+    // def nodea(n : UInt) : UInt = 
+    //     n(conf.Node_width * 2 - 1, conf.Node_width)
+
+    // def wmode(n : UInt) : UInt = 
+    //     n(conf.Node_width * 2)
+
+    // def web(n : UInt) : UInt = 
+    //     n(conf.Node_width * 2 + 1)
+
+    // def wea(n : UInt) : UInt = 
+    //     n(conf.Node_width * 2 + 2)
+
+    // def addrb(n : UInt) : UInt = 
+    //     n(conf.loc_addrb - 1, conf.Node_width * 2 + 3)
+
+    // def addra(n : UInt) : UInt = 
+    //     n(conf.loc_addra - 1, conf.loc_addrb)
+        
+    // def dinb(n : UInt) : UInt = 
+    //     n(conf.loc_addra + conf.Data_width_bram - 1, conf.loc_addra)
+
+    // def dina(n : UInt) : UInt = 
+    //     n(conf.loc_addra + conf.Data_width_bram * 2 - 1, conf.loc_addra + conf.Data_width_bram)
+
+    // def enb(n : UInt) : UInt = 
+    //     n(conf.loc_addra + conf.Data_width_bram * 2)
+
+    // def ena(n : UInt) : UInt = 
+    //     n(conf.loc_addra + conf.Data_width_bram * 2 + 1)
+
+    // def douta(n : UInt) : UInt = 
+    //     n(conf.Data_width_bram * 2 - 1, conf.Data_width_bram)
+
+    // def doutb(n : UInt) : UInt = 
+    //     n(conf.Data_width_bram - 1, 0)
 
 }

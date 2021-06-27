@@ -56,6 +56,7 @@ class master(implicit val conf : HBMGraphConfiguration) extends Module{
   io.current_level := level
   io.frontier_flag := frontier_flag
   io.start := false.B
+
   val state0 :: state1  :: Nil = Enum(2)
   val stateReg = RegInit(state0)
   switch(stateReg){
@@ -93,9 +94,31 @@ class master(implicit val conf : HBMGraphConfiguration) extends Module{
 
   }
 
+  // val ila = Module(new ila_master)
+
+  // ila.io.probe0 := io.start                  //master start
+  // ila.io.probe1 := level                     //master current_level
+  // ila.io.probe2 := p2_cnt_total              //master p2_cnt_total
+  // ila.io.probe3 := mem_cnt_total             //master mem_cnt_total
+  // ila.io.probe4 := p2_pull_count_total       //master p2_pull_count_total
+  // ila.io.probe5 := frontier_pull_count_total //master frontier_pull_count_total
+  // ila.io.probe6 := mem_end_state             //master mem_end_state
+  // ila.io.probe7 := io.p2_end                 //master p2_end
+  // ila.io.probe8 := end_state                 //master end
+  // ila.io.probe9 := stateReg                  //master STATEREG
+  // ila.io.clk    := clock
+
+
+
+
 }
 
-
-
-
-
+class copy(val length : Int)(implicit val conf : HBMGraphConfiguration) extends Module{
+  val io = IO(new Bundle{
+    val in = Input(UInt(length.W))
+    val out = Output(Vec(conf.channel_num, UInt(length.W)))
+  })
+  for(i <- 0 until conf.channel_num){
+    io.out(i) := RegNext(io.in)
+  }
+}
