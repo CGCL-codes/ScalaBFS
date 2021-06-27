@@ -306,4 +306,4 @@ TABLE 2: Performance comparison between GunRock and ScalaBFS (32-PC/64-PE config
 
 FIGURE 1: Performances and aggregated bandwidths of ScalaBFS (with 32 HBM PCs and 64 PEs) and baseline case
 
-<img src="docs/fig11-compare-naive.jpg" width="600">
+<img src="docs/compare-naive.jpg" width="600">
