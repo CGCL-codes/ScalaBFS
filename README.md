@@ -277,33 +277,33 @@ TABLE 2: Performance comparison between GunRock and ScalaBFS (32-PC/64-PE config
     <td>soc-Pokec (PK)</td>
     <td>14.9</td>
     <td>0.050</td>
-    <td>16.2</td>
-    <td>0.506</td>
+    <td>22.44</td>
+    <td>0.455</td>
   </tr>
   <tr>
     <td>soc-LiveJournal (LJ)</td>
     <td>18.5</td>
     <td>0.062</td>
-    <td>11.2</td>
-    <td>0.350</td>
+    <td>15.62</td>
+    <td>0.317</td>
   </tr>
   <tr>
     <td>com-Orkut (OR)</td>
     <td>150.6</td>
     <td>0.502</td>
-    <td>19.1</td>
-    <td>0.597</td>
+    <td>26.22</td>
+    <td>0.532</td>
   </tr>
   <tr>
     <td>hollywood-2009 (HO)</td>
     <td>73</td>
     <td>0.243</td>
-    <td>16.4</td>
-    <td>0.513</td>
+    <td>26.22</td>
+    <td>0.455</td>
   </tr>
 </tbody>
 </table>
 
 FIGURE 1: Performances and aggregated bandwidths of ScalaBFS (with 32 HBM PCs and 64 PEs) and baseline case
 
-<img src="https://github.com/lizardll/ScalaBFS/blob/master/docs/fig11-compare-naive.jpg" width="600">
+<img src="docs/fig11-compare-naive.jpg" width="600">
