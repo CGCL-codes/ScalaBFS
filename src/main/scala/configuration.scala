@@ -4,7 +4,7 @@ import chisel3.util._
 case class HBMGraphConfiguration()
 {
     //***************** Configurations ************************************
-    val channel_num = 32            // the number of PEs
+    val channel_num = 32            // the number of PCs
     val pipe_num_per_channel = 4    // the number of PEs per PC
 
     val shift_channel = 5           // Log2(channel_num) //
