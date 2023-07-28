@@ -2,7 +2,7 @@
 
 ## Introduction
 
-ScalaBFS2 is a high performance BFS accelerator built on an HBM-enhanced FPGA Chip that executes BFS algorithms in a vertex-centered manner. Running at 170~225 MHz on the Xilinx XCU280 chip, ScalaBFS2 achieves a performance of 56.92 GTEPS (Giga Traversed Edges Per Second), which achieves a speedup of 2.52~4.40 times compared to state-of-the-art work based on the same chip, and 1.34~2.40 times compared to Gunrock running on the Nvidia A100 GPU. 
+ScalaBFS2 is a high performance BFS accelerator built on an HBM-enhanced FPGA Chip that executes BFS algorithms in a **vertex-centered** manner. Running at 170\~225 MHz on the Xilinx XCU280 chip, ScalaBFS2 achieves a performance of **56.92 GTEPS** (Giga Traversed Edges Per Second), which achieves a speedup of **2.52x\~4.40x** compared to state-of-the-art work based on the same chip, and **1.34x\~2.40x** compared to Gunrock running on the Nvidia A100 GPU. 
 
 ## Organization
 
