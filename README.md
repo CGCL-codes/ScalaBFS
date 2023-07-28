@@ -79,7 +79,7 @@ sudo apt install scala
 ## Clone and Build 
 
 ```
-$ git clone https://github.com/lizardll/ScalaBFS.git
+$ git clone https://github.com/CGCL-codes/ScalaBFS/tree/ScalaBFS_v1
 $ make
 ```
 
