@@ -1,16 +1,18 @@
 CC:=g++
-transfer=transfer.cpp
-generate=GraphToScalaBFS.cpp
+# generate=GraphToScalaBFS.cpp
+generate=GraphToScalaBFS_2.cpp
 
-all : transfer GraphToScalaBFS
+CFLAGS :=
+# CFLAGS += -lpthread
+CFLAGS += -fopenmp
 
-transfer:$(transfer)
-	${CC} $(transfer) -o transfer
+all : GraphToScalaBFS
 
 GraphToScalaBFS:$(generate)
-	${CC} $(generate) -o GraphToScalaBFS
+	${CC} $(generate) -o undirected_num $(CFLAGS)
 
 clean:
 	rm -f *.o
-	rm -f transfer
 	rm -f GraphToScalaBFS
+
+.PHONY: clean
