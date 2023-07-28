@@ -37,7 +37,8 @@ Example:
 cd data_preprocess
 make all
 ./GraphToScalaBFS soc-livejournal.txt 32 128 1
-`
+```
+
 ## Well-tested Graph Data Set
 
 
