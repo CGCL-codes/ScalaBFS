@@ -83,9 +83,27 @@ sudo apt install scala
 
 ## Clone and Build 
 
+```bash
+git clone https://github.com/CGCL-codes/ScalaBFS/
+vim src/main/scala/configuration.scala # modify the Configurations
+make
 ```
-$ git clone https://github.com/CGCL-codes/ScalaBFS/
-$ make
+
+The Configurations conclude the number of PCs, the number of PEs per PC, and the distribution of PGs within the three SLRs
+
+```scala
+//***************** Configurations ************************************
+val channel_num = 32            // the number of PCs
+val pipe_num_per_channel = 4    // the number of PEs per PC
+
+val shift_channel = 5           // Log2(channel_num) //
+val shift_pipe = 2              // Log2(pipe_num_per_channel)
+
+val slr0_channel_num = 0        // the number of PGs placed in SLR0, recommended as 0
+val slr1_channel_num = 14       // the number of PGs placed in SLR1
+val slr2_channel_num = channel_num - slr0_channel_num - slr1_channel_num    // the number of PGs placed in SLR2
+
+//*********************************************************************
 ```
 
 ## Quick Start Guide
