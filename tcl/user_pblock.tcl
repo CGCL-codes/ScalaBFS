@@ -1,0 +1,14 @@
+read_xdc SLR_assignment.xdc
+read_xdc SLR_assignment_q_p1_end.xdc
+read_xdc SLR_assignment_q_uram_out_a.xdc
+read_xdc SLR_assignment_q_uram_addr_a.xdc
+read_xdc SLR_assignment_R_array_index.xdc
+read_xdc SLR_assignment_R_array_index_q.xdc
+read_xdc timing.xdc
+read_xdc false_path_offset.xdc
+read_xdc timing_copy0_mem.xdc
+read_xdc timing_copy0.xdc
+read_xdc timing_copy1.xdc
+read_xdc timing_copy2.xdc
+read_xdc timing_copy_pipe_1.xdc
+read_xdc timing_copy_pipe_2.xdc
