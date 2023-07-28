@@ -4,13 +4,6 @@ import chisel3.Driver
 import chisel3.util._
 
 
-/* chisel中无inout端口，各process所需的上一process的finish信号，是否按照设计从master接出？
- * 添加flag_Qc，其中p1与p4所使用的flag信号应该相反
- * 添加current_level处理
- */
-
-
-
 class master(implicit val conf : HBMGraphConfiguration) extends Module{
   val io = IO(new Bundle{
         val global_start = Input(Bool())
@@ -31,22 +24,58 @@ class master(implicit val conf : HBMGraphConfiguration) extends Module{
 
         val levels = Input(new levels)
         val push_or_pull = Output(UInt(1.W))
+
+        val init_bram = Input(Vec(conf.channel_num,Bool())) 
   })
 
-  val mem_end_state = Wire(Bool())
-  val end_state = Wire(Bool())
-  mem_end_state := io.mem_end.reduce(_&_)
-  end_state := io.end.reduce(_&_)
+
+  val last_iteration_state = RegInit(false.B)
+  val mem_end_state = RegInit(false.B)
+  val end_state = RegInit(false.B)
+  
+  val and_last_iteration_state  = Module(new and(conf.channel_num))
+  val and_mem_end_state         = Module(new and(conf.channel_num))
+  val and_end_state             = Module(new and(conf.channel_num))
+  for(i <- 0 until conf.channel_num){
+    and_last_iteration_state.io.in(i)   <> io.last_iteration_state(i)
+    and_mem_end_state.io.in(i)          <> io.mem_end(i)
+    and_end_state.io.in(i)              <> io.end(i)
+  }
+  last_iteration_state <> and_last_iteration_state.io.out
+  mem_end_state        <> and_mem_end_state.io.out
+  end_state            <> and_end_state.io.out
+
+
+  val init_state = RegNext(io.init_bram.reduce(_|_))
 
   val global_finish_state = RegInit(false.B)
   io.global_finish := global_finish_state
 
+
+
   val p2_cnt_total = RegInit(0.U(conf.Data_width.W))
   val mem_cnt_total = RegInit(0.U(conf.Data_width.W))
-  p2_cnt_total := io.p2_count.reduce(_+_)
-  mem_cnt_total := io.mem_count.reduce(_+_)
-  val p2_pull_count_total = RegNext(io.p2_pull_count.reduce(_+_))
-  val frontier_pull_count_total = RegNext(io.frontier_pull_count.reduce(_+_))
+  val p2_pull_count_total = RegInit(0.U(conf.Data_width.W))
+  val frontier_pull_count_total = RegInit(0.U(conf.Data_width.W))
+
+  val adder_p2_cnt = Module(new adder(conf.channel_num, conf.Data_width))
+  val adder_mem_cnt = Module(new adder(conf.channel_num, conf.Data_width))
+  val adder_p2_pull_count = Module(new adder(conf.channel_num, conf.Data_width))
+  val adder_frontier_pull_count = Module(new adder(conf.channel_num, conf.Data_width))
+  
+
+  for(i <- 0 until conf.channel_num){
+    adder_p2_cnt.io.in(i)               <> io.p2_count(i)
+    adder_mem_cnt.io.in(i)              <> io.mem_count(i)
+    adder_p2_pull_count.io.in(i)        <> io.p2_pull_count(i)
+    adder_frontier_pull_count.io.in(i)  <> io.frontier_pull_count(i)
+  }
+
+  p2_cnt_total  <> adder_p2_cnt.io.out
+  mem_cnt_total <> adder_mem_cnt.io.out
+  p2_pull_count_total <> adder_p2_pull_count.io.out
+  frontier_pull_count_total <> adder_frontier_pull_count.io.out
+  
 
   val push_or_pull_state = RegInit(0.U(1.W))
   io.push_or_pull := push_or_pull_state
@@ -57,12 +86,18 @@ class master(implicit val conf : HBMGraphConfiguration) extends Module{
   io.frontier_flag := frontier_flag
   io.start := false.B
 
+  val count_for_start = RegInit(0.U(5.W))
+  count_for_start := 0.U
+  //init bram
+  val init_bram = io.init_bram
+
   val state0 :: state1  :: Nil = Enum(2)
   val stateReg = RegInit(state0)
   switch(stateReg){
     is(state0){
       io.start := false.B
-      when(end_state && io.global_start){
+      count_for_start := 0.U
+      when(end_state && io.global_start && init_state){
         stateReg := state1
         frontier_flag := frontier_flag + 1.U
 
@@ -73,7 +108,7 @@ class master(implicit val conf : HBMGraphConfiguration) extends Module{
             push_or_pull_state := 0.U
         }
 
-        when(io.last_iteration_state.reduce(_&_)){
+        when(last_iteration_state){ //io.last_iteration_state.reduce(_&_)
           global_finish_state := true.B
           stateReg := state0
         } .otherwise{
@@ -82,8 +117,13 @@ class master(implicit val conf : HBMGraphConfiguration) extends Module{
       }
     }
     is(state1){
+      count_for_start := count_for_start + 1.U
       io.start := RegNext(true.B)
-      stateReg := state0
+      when(count_for_start === 20.U){
+        stateReg := state0
+        count_for_start := 0.U
+      }
+
     }
   }
 
@@ -94,23 +134,6 @@ class master(implicit val conf : HBMGraphConfiguration) extends Module{
 
   }
 
-  // val ila = Module(new ila_master)
-
-  // ila.io.probe0 := io.start                  //master start
-  // ila.io.probe1 := level                     //master current_level
-  // ila.io.probe2 := p2_cnt_total              //master p2_cnt_total
-  // ila.io.probe3 := mem_cnt_total             //master mem_cnt_total
-  // ila.io.probe4 := p2_pull_count_total       //master p2_pull_count_total
-  // ila.io.probe5 := frontier_pull_count_total //master frontier_pull_count_total
-  // ila.io.probe6 := mem_end_state             //master mem_end_state
-  // ila.io.probe7 := io.p2_end                 //master p2_end
-  // ila.io.probe8 := end_state                 //master end
-  // ila.io.probe9 := stateReg                  //master STATEREG
-  // ila.io.clk    := clock
-
-
-
-
 }
 
 class copy(val length : Int)(implicit val conf : HBMGraphConfiguration) extends Module{
@@ -118,7 +141,58 @@ class copy(val length : Int)(implicit val conf : HBMGraphConfiguration) extends 
     val in = Input(UInt(length.W))
     val out = Output(Vec(conf.channel_num, UInt(length.W)))
   })
+  val out_reg = RegInit(VecInit(Seq.fill(conf.channel_num)(0.U(length.W))))
   for(i <- 0 until conf.channel_num){
-    io.out(i) := RegNext(io.in)
+    out_reg(i) := io.in
+    // io.out(i) := RegNext(io.in)
   }
+  io.out := out_reg
+}
+
+class copy_pipe(val length : Int)(implicit val conf : HBMGraphConfiguration) extends Module{
+  val io = IO(new Bundle{
+    val in = Input(UInt(length.W))
+    val out = Output(Vec(conf.pipe_num_per_channel, UInt(length.W)))
+  })
+  val out_reg = RegInit(VecInit(Seq.fill(conf.pipe_num_per_channel)(0.U(length.W))))
+  for(i <- 0 until conf.pipe_num_per_channel){
+    out_reg(i) := io.in
+  }
+  io.out := out_reg
+}
+
+class copy_slr0(val length : Int)(implicit val conf : HBMGraphConfiguration) extends Module{
+  val io = IO(new Bundle{
+    val in = Input(UInt(length.W))
+    val out = Output(Vec(conf.slr0_channel_num, UInt(length.W)))
+  })
+  val out_reg = RegInit(VecInit(Seq.fill(conf.slr0_channel_num)(0.U(length.W))))
+  for(i <- 0 until conf.slr0_channel_num){
+    out_reg(i) := io.in
+  }
+  io.out := out_reg
+}
+
+class copy_slr1(val length : Int)(implicit val conf : HBMGraphConfiguration) extends Module{
+  val io = IO(new Bundle{
+    val in = Input(UInt(length.W))
+    val out = Output(Vec(conf.slr1_channel_num, UInt(length.W)))
+  })
+  val out_reg = RegInit(VecInit(Seq.fill(conf.slr1_channel_num)(0.U(length.W))))
+  for(i <- 0 until conf.slr1_channel_num){
+    out_reg(i) := io.in
+  }
+  io.out := out_reg
+}
+
+class copy_slr2(val length : Int)(implicit val conf : HBMGraphConfiguration) extends Module{
+  val io = IO(new Bundle{
+    val in = Input(UInt(length.W))
+    val out = Output(Vec(conf.slr2_channel_num, UInt(length.W)))
+  })
+  val out_reg = RegInit(VecInit(Seq.fill(conf.slr2_channel_num)(0.U(length.W))))
+  for(i <- 0 until conf.slr2_channel_num){
+    out_reg(i) := io.in
+  }
+  io.out := out_reg
 }

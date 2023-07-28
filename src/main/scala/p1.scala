@@ -25,16 +25,20 @@ class P1 (val num :Int)(implicit val conf : HBMGraphConfiguration) extends Modul
     val read_R_array_index = Module(new read_R_array_index(num))
     
     // io <> p1_read_frontier_or_visited_map
-    p1_read_frontier_or_visited_map.io.start := io.start
+    p1_read_frontier_or_visited_map.io.start := RegNext(io.start)
     io.frontier_count <> p1_read_frontier_or_visited_map.io.frontier_count
-    p1_read_frontier_or_visited_map.io.node_num := io.node_num
+    p1_read_frontier_or_visited_map.io.node_num := RegNext(io.node_num)
     
     // io <> read_R_array_index
-    read_R_array_index.io.node_num := io.node_num
-    read_R_array_index.io.start := io.start
+    read_R_array_index.io.node_num := RegNext(io.node_num)
+    read_R_array_index.io.start := RegNext(io.start)
     read_R_array_index.io.frontier_value <> io.frontier_value
-    read_R_array_index.io.push_or_pull_state := io.push_or_pull_state
-    io.R_array_index <> read_R_array_index.io.R_array_index
+    read_R_array_index.io.push_or_pull_state := RegNext(io.push_or_pull_state)
+
+    val q_R_array_index  = Queue(read_R_array_index.io.R_array_index, 2)
+    val q_R_array_index_1  = Queue(q_R_array_index, 2)
+    io.R_array_index <> q_R_array_index_1
+    // io.R_array_index <> read_R_array_index.io.R_array_index
     io.p1_end := read_R_array_index.io.p1_end
     
 }
@@ -54,22 +58,29 @@ class p1_read_frontier_or_visited_map (implicit val conf : HBMGraphConfiguration
     // init signals
     io.frontier_count.valid := false.B
     io.frontier_count.bits := DontCare
-    val state0 ::state1 :: Nil = Enum(2)
+    val state0 ::state1 ::state2 :: Nil = Enum(3)
+    // This is changed by an error in chisel->verilog, when the 'state' has only 1 bit
+    // when(io.start) state0->state1 converts to an error code for unknown reasons
+    // _GEN_1 = io_start | stateReg
+    // '| stateReg' is not need
     val stateReg = RegInit(state0) // mark state of read current_frontier
     
     // local variables
     val count = RegInit(0.U(32.W))  // count the number of current frontier to require
-    val size =  ((io.node_num - 1.U) / conf.Data_width_bram.U) + 1.U // the total number of current frontier 
+    val size =  RegNext(((RegNext(io.node_num) - 1.U) >> conf.shift_bram.U) + 1.U )// the total number of current frontier 
 
+    val delay_for_end = RegInit(0.U(5.W))
     // require current_frontier from frontier module
     // not process p1_end signal
     switch(stateReg){
         is(state0){
             io.frontier_count.valid := false.B
             io.frontier_count.bits := DontCare
-            when(io.start){
-                stateReg := state1
+            delay_for_end := 0.U
+            when(io.start){ 
                 count := 0.U
+                stateReg := state1
+                
             }
         }
         is(state1){
@@ -79,11 +90,21 @@ class p1_read_frontier_or_visited_map (implicit val conf : HBMGraphConfiguration
             when(io.frontier_count.ready){
                 count := count + 1.U
                 when(count === size - 1.U){
-                    stateReg := state0
+                    stateReg := state2
                 }
                 .otherwise{
                     stateReg := state1
                 }
+            }
+        }
+        // The start signal needs to be pulled up for more than one beat to support the RegNext signal to be completely transmitted
+        // When the number of PEs is large and the number of points is small, it may cause redundant data transmission during the start stage
+        // Add state state2 to solve the problem
+        is(state2){ 
+            delay_for_end := delay_for_end + 1.U
+            when(delay_for_end === 10.U){
+                delay_for_end := 0.U
+                stateReg := state0
             }
         }
     }
@@ -111,22 +132,26 @@ class read_R_array_index (val num :Int)(implicit val conf : HBMGraphConfiguratio
     // local variables
     val state0 ::state1 :: state2 :: state3 :: Nil = Enum(4)
     val stateReg = RegInit(state0) // mark state of read R array
+
     val q_frontier_value_l1 = Queue(io.frontier_value, 2)
-    val q_frontier_value_l2 = Queue(q_frontier_value_l1, 2)
-    // val q_frontier_value_l3 = Queue(q_frontier_value_l2, 1)
-    // val q_frontier_value_l4 = Queue(q_frontier_value_l3, 1)
-    val q_frontier_value = Queue(q_frontier_value_l2, conf.q_frontier_to_p1_len)  // use a FIFO queue to receive data
+    val q_frontier_value_l2 = Module(new Queue(UInt(conf.Data_width_bram.W), 2))
+    q_frontier_value_l2.io.enq <> q_frontier_value_l1
+    q_frontier_value_l2.io.enq.bits <> ~(~q_frontier_value_l1.bits)
+    q_frontier_value_l2.io.enq.valid <> ~(~q_frontier_value_l1.valid)
+    q_frontier_value_l2.io.enq.ready <> q_frontier_value_l1.ready
+    val q_frontier_value = Queue(q_frontier_value_l2.io.deq, conf.q_frontier_to_p1_len)  // use a FIFO queue to receive data
     
     
-    // dontTouch(q_frontier_value) // to prevent the optimization of port io_enq_bits and io_deq_bits
-    val size =  ((io.node_num - 1.U) / conf.Data_width_bram.U) + 1.U // the total number of current frontier 
+    val size =  RegNext(((RegNext(io.node_num) - 1.U) >> conf.shift_bram.U) + 1.U) // the total number of current frontier 
     val count_f = RegInit(0.U(32.W))    // count the number of frontier received
     val frontier = RegInit(0.U(conf.Data_width_bram.W))  // store current frontier received
     val node = RegInit(0.U(conf.Data_width.W))  // the node num inside current frontier
     val node_num_in_frontier = RegInit(0.U(32.W)) // the number of node in current frontier(Data_width bits)
     val count_node_in_frontier = RegInit(0.U(32.W)) // count the number of node dealed in current frontier(Data_width bits)
     q_frontier_value.ready := false.B // equivalent to q_frontier_value.nodeq()
-    
+
+    val find_one = Module (new find_one_32)
+    find_one.io.data := DontCare
     // receive current_frontier from frontier module and require R array from Memory
     // give p1_end signal
     switch(stateReg){
@@ -155,9 +180,8 @@ class read_R_array_index (val num :Int)(implicit val conf : HBMGraphConfiguratio
                 // push mode
                 when(q_frontier_value.bits =/= 0.U && io.push_or_pull_state === 0.U){    
                     //exist node inside current frontier
-                    // node := Log2(q_frontier_value.bits - (q_frontier_value.bits & (q_frontier_value.bits - 1.U))) + conf.Data_width.U * count_f
-                    node := Custom_function.find_node(q_frontier_value.bits, conf.Data_width_bram, count_f)
-                    // frontier := q_frontier_value.bits & (q_frontier_value.bits - 1.U)
+                    find_one.io.data := q_frontier_value.bits
+                    node := Custom_function.find_node(find_one.io.loc, conf.Data_width_bram, count_f)
                     frontier := Custom_function.remove_one(q_frontier_value.bits)
                     count_node_in_frontier := 0.U
                     stateReg := state2
@@ -165,8 +189,8 @@ class read_R_array_index (val num :Int)(implicit val conf : HBMGraphConfiguratio
                 // pull mode
                 .elsewhen((~q_frontier_value.bits) =/= 0.U && io.push_or_pull_state === 1.U){
                     //exist node unvisited
-                    node := Custom_function.find_node(~q_frontier_value.bits, conf.Data_width_bram, count_f)
-                    // frontier := q_frontier_value.bits & (q_frontier_value.bits - 1.U)
+                    find_one.io.data := ~q_frontier_value.bits
+                    node := Custom_function.find_node(find_one.io.loc, conf.Data_width_bram, count_f)
                     frontier := Custom_function.remove_one(~q_frontier_value.bits)
                     count_node_in_frontier := 0.U
                     stateReg := state2
@@ -179,7 +203,7 @@ class read_R_array_index (val num :Int)(implicit val conf : HBMGraphConfiguratio
         is(state2){
             // send R array 
             q_frontier_value.ready := false.B
-            when(node > io.node_num - 1.U){
+            when(node > RegNext(io.node_num - 1.U)){
                 // all the points have been processed and the round is over
                 stateReg := state0 
             }
@@ -189,13 +213,12 @@ class read_R_array_index (val num :Int)(implicit val conf : HBMGraphConfiguratio
             .otherwise{
                 io.R_array_index.valid := true.B
                 // convert the number of points inside the pipeline to the total number
-                io.R_array_index.bits := node * conf.numSubGraphs.U + num.U 
+                io.R_array_index.bits := (node << conf.shift.U) + num.U 
                 when(io.R_array_index.ready){
                     count_node_in_frontier := count_node_in_frontier + 1.U
-                    // frontier := frontier & (frontier - 1.U)
                     frontier := Custom_function.remove_one(frontier)
-                    // node := Log2(frontier - (frontier & (frontier - 1.U))) + conf.Data_width_bram.U * (count_f - 1.U)
-                    node := Custom_function.find_node(frontier, conf.Data_width_bram, count_f - 1.U)
+                    find_one.io.data := frontier
+                    node := Custom_function.find_node(find_one.io.loc, conf.Data_width_bram, count_f - 1.U)
                     stateReg := state2
                 }
             }
@@ -220,7 +243,8 @@ object Custom_function{
         Log2(n - (n & (n - 1.U)))
 
     def find_node(n : UInt, data_width : Int, count : UInt) : UInt = 
-        find_one(n) + data_width.U * count
+        n + data_width.U * count
+        // find_one(n) + data_width.U * count
 
     def remove_one(n : UInt) : UInt = 
         n & (n - 1.U)

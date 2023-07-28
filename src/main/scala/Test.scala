@@ -55,6 +55,55 @@ object Testmaster extends App{
   
 }
 
+object Testreader extends App{
+    implicit val configuration = HBMGraphConfiguration()
+    chisel3.Driver.execute(Array[String](), () => new HBM_reader(0)(configuration))
+  
+}
+
+object Testone extends App{
+    implicit val configuration = HBMGraphConfiguration()
+    chisel3.Driver.execute(Array[String](), () => new find_one_32()(configuration))
+    
+}
+
+object Testadder extends App{
+    implicit val configuration = HBMGraphConfiguration()
+    chisel3.Driver.execute(Array[String](), () => new adder(32, 32)(configuration))
+    
+}
+
+object Testcxb_24 extends App{
+    implicit val configuration = HBMGraphConfiguration()
+    chisel3.Driver.execute(Array[String](), () => new crossbar(false)(configuration))
+
+}
+
+// object Testslr0 extends App{
+//     implicit val configuration = HBMGraphConfiguration()
+//     chisel3.Driver.execute(Array[String](), () => new SLR0()(configuration))
+    
+// }
+
+// object Testslr1 extends App{
+//     implicit val configuration = HBMGraphConfiguration()
+//     chisel3.Driver.execute(Array[String](), () => new SLR1()(configuration))
+    
+// }
+
+// object Testslr2 extends App{
+//     implicit val configuration = HBMGraphConfiguration()
+//     chisel3.Driver.execute(Array[String](), () => new SLR2()(configuration))
+    
+// }
+
+// object Testreadertop extends App{
+//     implicit val configuration = HBMGraphConfiguration()
+//     chisel3.Driver.execute(Array[String](), () => new top_for_hbm_reader()(configuration))
+  
+// }
+
+
 // class Test(c:Top) extends PeekPokeTester(c){
 //   for(t <- 0 until 50){
 //     println("-----------------------------------------------------------------------------------------------")
