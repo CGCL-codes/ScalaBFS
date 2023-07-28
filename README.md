@@ -1,5 +1,7 @@
 # ScalaBFS: A Scalable BFS Accelerator on HBM-Enhanced FPGAs
 
+***This is the historical version of ScalaBFS, the latest version of ScalaBFS2 is under the [master branch](https://github.com/CGCL-codes/ScalaBFS/tree/master).***
+
 ScalaBFS is an BFS accelerator built on top of an FPGA configured with HBM (i.e., FPGA-HBM platform) which can scale its performance according to the available memory channels (on a single card). It utlizes multiple processing elements to sufficiently exploit the high bandwidth of HBM to improve efficiency. We implement the prototype system of ScalaBFS on Xilinx Alveo U280 FPGA card (real hardware).
 
 ## Organization
