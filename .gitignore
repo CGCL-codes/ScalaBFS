@@ -10,9 +10,8 @@
 *.anno
 *.anno.json
 *.fir
-*.v
+# *.v
 *.xml
-*.v
 *.log
 # Jupyter-scala scripts
 coursier
