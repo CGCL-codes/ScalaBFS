@@ -138,6 +138,7 @@ case class HBMGraphConfiguration()
     val Data_width_p2_to_f = Addr_width + 1
 
     val cross_slr_len = 8
+    val node_queue_depth = 32
 
 }
 
