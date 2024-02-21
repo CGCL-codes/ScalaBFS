@@ -6,15 +6,15 @@ ScalaBFS2 is a high performance BFS accelerator built on an HBM-enhanced FPGA Ch
 
 ## Organization
 
-- The code for ScalaBFS using Chisel/Verilog language is located in [src/](https://github.com/CGCL-codes/ScalaBFS/tree/master/src/main/scala) directory. 
+- The code for ScalaBFS using Chisel/Verilog language is located in [src/](https://github.com/CGCL-codes/ScalaBFS/tree/ScalaBFS_v2/src/main/scala) directory. 
 
-- The OpenCL code for the host part is located in [host/](https://github.com/CGCL-codes/ScalaBFS/tree/master/host) directory.
+- The OpenCL code for the host part is located in [host/](https://github.com/CGCL-codes/ScalaBFS/tree/ScalaBFS_v2/host) directory.
 
 - Vitis project is located in ScalaBFS-proj/ directory after unpacked.
 
-- Graph data processing files are provided in [data_preprocess/](https://github.com/CGCL-codes/ScalaBFS/tree/master/data_preprocess) directory.
+- Graph data processing files are provided in [data_preprocess/](https://github.com/CGCL-codes/ScalaBFS/tree/ScalaBFS_v2/data_preprocess) directory.
 
-- Constraints used in the P&R in [tcl/](https://github.com/CGCL-codes/ScalaBFS/tree/master/tcl) directory.
+- Constraints used in the P&R in [tcl/](https://github.com/CGCL-codes/ScalaBFS/tree/ScalaBFS_v2/tcl) directory.
 
 ## Prerequisites
 
@@ -114,7 +114,7 @@ val slr2_channel_num = channel_num - slr0_channel_num - slr1_channel_num    // t
 
 ### Preprocess
 
-Before deploying and running ScalaBFS, we need to make sure that you have specific graph data with divided csc-csr format that ScalaBFS required.  For complete graph data preprocess guide, see [data_preprocess/](https://github.com/CGCL-codes/ScalaBFS/tree/master/data_preprocess)
+Before deploying and running ScalaBFS, we need to make sure that you have specific graph data with divided csc-csr format that ScalaBFS required.  For complete graph data preprocess guide, see [data_preprocess/](https://github.com/CGCL-codes/ScalaBFS/tree/ScalaBFS_v2/data_preprocess)
 
 We start with a small directed graph named Wiki-Vote for example. First we should make for directed or undirected graph for propose. Then we generate divided graph data with 32 channels and 64 PEs for ScalaBFS.
 
