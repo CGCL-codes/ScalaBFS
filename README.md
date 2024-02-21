@@ -2,6 +2,8 @@
 
 ## Introduction
 
+***This is the latest version of ScalaBFS2 (the same as [ScalaBFS_v2 branch](https://github.com/CGCL-codes/ScalaBFS/tree/ScalaBFS_v2)), the historical version of ScalaBFS is under the [ScalaBFS_v1 branch](https://github.com/CGCL-codes/ScalaBFS/tree/ScalaBFS_v1).***
+
 ScalaBFS2 is a high performance BFS accelerator built on an HBM-enhanced FPGA Chip that executes BFS algorithms in a **vertex-centered** manner. Running at 170\~225 MHz on the Xilinx XCU280 chip, ScalaBFS2 achieves a performance of **56.92 GTEPS** (Giga Traversed Edges Per Second).
 
 ## Organization
