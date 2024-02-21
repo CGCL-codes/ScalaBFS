@@ -14,7 +14,7 @@ ScalaBFS2 is a high performance BFS accelerator built on an HBM-enhanced FPGA Ch
 
 - Graph data processing files are provided in [data_preprocess/](https://github.com/CGCL-codes/ScalaBFS/tree/master/data_preprocess) directory.
 
-- Constraints used in the P&R in [tcl/]((https://github.com/CGCL-codes/ScalaBFS/tree/master/tcl)) directory.
+- Constraints used in the P&R in [tcl/](https://github.com/CGCL-codes/ScalaBFS/tree/master/tcl) directory.
 
 ## Prerequisites
 
