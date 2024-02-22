@@ -192,7 +192,7 @@ class Top(implicit val conf : HBMGraphConfiguration) extends Module{
     }
 // -------------------- master io end --------------------------------------
 
-// --------------------- SLR0_Mem <> SLR0 ----------------------------------
+// --------------------- SLR0_Mem <> SLR0 start ----------------------------------
     // for(i <- 0 until conf.slr0_channel_num) {
     //     SLR0_Mem.io.p1_end(i)           <> RegNext(SLR0.io.p1_end(i))
     // }
@@ -203,9 +203,9 @@ class Top(implicit val conf : HBMGraphConfiguration) extends Module{
     //     SLR0_Mem.io.uram_out_a(i)       <> RegNext(SLR0.io.uram_out_a(i))    
     //     RegNext(SLR0_Mem.io.uram_addr_a(i))      <> SLR0.io.uram_addr_a(i)    
     // }
-// --------------------- SLR0_Mem <> SLR0 ----------------------------------
+// --------------------- SLR0_Mem <> SLR0 end ----------------------------------
 
-// --------------------- SLR0_Mem <> SLR1 ----------------------------------
+// --------------------- SLR0_Mem <> SLR1 start ----------------------------------
     val p1_end_q_01_slr0 = RegInit(VecInit(Seq.fill(conf.slr1_channel_num)(false.B)))
     val p1_end_q_01_slr1 = RegInit(VecInit(Seq.fill(conf.slr1_channel_num)(false.B)))
 
@@ -266,14 +266,6 @@ class Top(implicit val conf : HBMGraphConfiguration) extends Module{
         R_array_index_01_slr0_q(i).io.enq.bits  <> R_array_index_01_slr0(i).io.deq_bits 
 
         SLR0_Mem.io.R_array_index(i + conf.slr0_channel_num * conf.pipe_num_per_channel) <> R_array_index_01_slr0_q(i).io.deq
-
-        // SLR0_Mem.io.R_array_index(i + conf.slr0_channel_num * conf.pipe_num_per_channel).valid <> RegNext(R_array_index_01_slr0(i).io.deq_valid)
-        // SLR0_Mem.io.R_array_index(i + conf.slr0_channel_num * conf.pipe_num_per_channel).ready <> R_array_index_01_slr0(i).io.deq_ready
-        // SLR0_Mem.io.R_array_index(i + conf.slr0_channel_num * conf.pipe_num_per_channel).bits  <> R_array_index_01_slr0(i).io.deq_bits
-
-        // R_array_index_01_slr1(i).io.enq <> SLR1.io.R_array_index(i)
-        // R_array_index_01_slr0(i).io.enq <> R_array_index_01_slr1(i).io.deq
-        // SLR0_Mem.io.R_array_index(i + conf.slr0_channel_num * conf.pipe_num_per_channel) <> R_array_index_01_slr0(i).io.deq
     }
 
     val r_array_count = RegInit(VecInit(Seq.fill(conf.slr1_channel_num * conf.pipe_num_per_channel)(0.U(conf.Data_width.W))))
@@ -283,18 +275,10 @@ class Top(implicit val conf : HBMGraphConfiguration) extends Module{
             r_array_count(i) := r_array_count(i) + 1.U
         }
     }
-    // for(i <- 0 until conf.slr1_channel_num) {
-    //     SLR0_Mem.io.p1_end(i + conf.slr0_channel_num)                                       <> RegNext(SLR1.io.p1_end(i))
-    // }
-    // for(i <- 0 until conf.slr1_channel_num * conf.pipe_num_per_channel) {
-    //     val tmp_q_r_array_01 = Queue(SLR1.io.R_array_index(i), conf.cross_slr_len)
-    //     SLR0_Mem.io.R_array_index(i + conf.slr0_channel_num * conf.pipe_num_per_channel)    <> tmp_q_r_array_01      
-    //     SLR0_Mem.io.uram_out_a(i + conf.slr0_channel_num * conf.pipe_num_per_channel)       <> RegNext(SLR1.io.uram_out_a(i))    
-    //     RegNext(SLR0_Mem.io.uram_addr_a(i + conf.slr0_channel_num * conf.pipe_num_per_channel))      <> SLR1.io.uram_addr_a(i)    
-    // }
-// --------------------- SLR0_Mem <> SLR1 ----------------------------------
+    
+// --------------------- SLR0_Mem <> SLR1 end ----------------------------------
 
-// --------------------- SLR0_Mem <> SLR2 ----------------------------------
+// --------------------- SLR0_Mem <> SLR2 start ----------------------------------
     val p1_end_q_02_slr0 = RegInit(VecInit(Seq.fill(conf.slr2_channel_num)(false.B)))
     val p1_end_q_02_slr1 = RegInit(VecInit(Seq.fill(conf.slr2_channel_num)(false.B)))
     val p1_end_q_02_slr2 = RegInit(VecInit(Seq.fill(conf.slr2_channel_num)(false.B)))
@@ -363,11 +347,7 @@ class Top(implicit val conf : HBMGraphConfiguration) extends Module{
         (R_array_index_02_slr0_q(i).io.count < conf.cross_slr_len.U - 1.U) <> R_array_index_02_slr0(i).io.deq_ready 
         R_array_index_02_slr0_q(i).io.enq.bits  <> R_array_index_02_slr0(i).io.deq_bits  
 
-        SLR0_Mem.io.R_array_index(i + (conf.slr0_channel_num + conf.slr1_channel_num) * conf.pipe_num_per_channel) <> R_array_index_02_slr0_q(i).io.deq
-
-        // SLR0_Mem.io.R_array_index(i + (conf.slr0_channel_num + conf.slr1_channel_num) * conf.pipe_num_per_channel).valid  <> RegNext(R_array_index_02_slr0(i).io.deq_valid) 
-        // SLR0_Mem.io.R_array_index(i + (conf.slr0_channel_num + conf.slr1_channel_num) * conf.pipe_num_per_channel).ready  <> R_array_index_02_slr0(i).io.deq_ready 
-        // SLR0_Mem.io.R_array_index(i + (conf.slr0_channel_num + conf.slr1_channel_num) * conf.pipe_num_per_channel).bits   <> R_array_index_02_slr0(i).io.deq_bits  
+        SLR0_Mem.io.R_array_index(i + (conf.slr0_channel_num + conf.slr1_channel_num) * conf.pipe_num_per_channel) <> R_array_index_02_slr0_q(i).io.deq 
     }
 
     val r_array_count_2 = RegInit(VecInit(Seq.fill(conf.slr2_channel_num * conf.pipe_num_per_channel)(0.U(conf.Data_width.W))))
@@ -377,30 +357,18 @@ class Top(implicit val conf : HBMGraphConfiguration) extends Module{
             r_array_count_2(i) := r_array_count_2(i) + 1.U
         }
     }
-    // for(i <- 0 until conf.slr2_channel_num) {
-    //     SLR0_Mem.io.p1_end(i + conf.slr0_channel_num + conf.slr1_channel_num)               <> RegNext(SLR2.io.p1_end(i))
-    // }
-    // for(i <- 0 until conf.slr2_channel_num * conf.pipe_num_per_channel) {
-    //     val tmp_q_r_array_02 = Queue(SLR2.io.R_array_index(i), conf.cross_slr_len)
-    //     SLR0_Mem.io.R_array_index(i + (conf.slr0_channel_num + conf.slr1_channel_num) * conf.pipe_num_per_channel)    <> tmp_q_r_array_02
-    //     // SLR0_Mem.io.R_array_index(i + (conf.slr0_channel_num + conf.slr1_channel_num) * conf.pipe_num_per_channel)    <> SLR2.io.R_array_index(i)        
-    //     SLR0_Mem.io.uram_out_a(i + (conf.slr0_channel_num + conf.slr1_channel_num) * conf.pipe_num_per_channel)       <> RegNext(SLR2.io.uram_out_a(i))    
-    //     RegNext(SLR0_Mem.io.uram_addr_a(i + (conf.slr0_channel_num + conf.slr1_channel_num) * conf.pipe_num_per_channel))      <> SLR2.io.uram_addr_a(i)    
-    // }
-// --------------------- SLR0_Mem <> SLR2 ----------------------------------
+
+// --------------------- SLR0_Mem <> SLR2 end ----------------------------------
 
 
 // --------------------- crossbar start ----------------------------------
 
+    // crossbar_array_mem <> SLR0_Mem
     for(i <- 0 until conf.numSubGraphs){
         crossbar_array_mem.io.in(i)  <> SLR0_Mem.io.neighbours(i)
     }
-    // for(i <- 0 until conf.channel_num){
-    //     for(j <- 0 until conf.pipe_num_per_channel){
-    //         crossbar_array_mem.io.in(j * conf.channel_num + i)  <> SLR0_Mem.io.neighbours(j * conf.channel_num + i)
-    //     }
-    // }
 
+    // // crossbar <> SLR0
     // for(i <- 0 until conf.slr0_channel_num){
     //     for(j <- 0 until conf.pipe_num_per_channel){
     //         crossbar_array_mem.io.out(j * conf.channel_num + i)  <> SLR0.io.p2_in(i * conf.pipe_num_per_channel + j)
@@ -417,21 +385,7 @@ class Top(implicit val conf : HBMGraphConfiguration) extends Module{
     //     }
     // }
 
-    // // for(i <- 0 until conf.slr0_channel_num * conf.pipe_num_per_channel) {
-    // //     // crossbar_array_mem.io.out(i) <> SLR0.io.p2_in(i)
-    // //     when(RegNext(master.io.push_or_pull) === 0.U){
-    // //         crossbar_array_visit.io.in(i)  <> DontCare
-    // //         crossbar_array_visit.io.out(i) <> DontCare
-    // //         crossbar_array_visit.io.in(i).valid := false.B
-    // //         SLR0.io.p2_out(i)    <> SLR0.io.frontier_in(i)
-    // //     }
-    // //     .otherwise {                                    // pull mode
-    // //         crossbar_array_visit.io.in(i)  <> SLR0.io.p2_out(i)
-    // //         crossbar_array_visit.io.out(i) <> SLR0.io.frontier_in(i)
-    // //     }
-    // // }
-
-
+    // crossbar <> SLR1
     for(i <- conf.slr0_channel_num until conf.slr1_channel_num + conf.slr0_channel_num){
         for(j <- 0 until conf.pipe_num_per_channel){
             crossbar_array_mem.io.out(j * conf.channel_num + i)  <> SLR1.io.p2_in((i - conf.slr0_channel_num) * conf.pipe_num_per_channel + j)
@@ -448,20 +402,7 @@ class Top(implicit val conf : HBMGraphConfiguration) extends Module{
         }
     }
 
-    // for(i <- 0 until conf.slr1_channel_num * conf.pipe_num_per_channel) {
-    //     // crossbar_array_mem.io.out(i + conf.slr0_channel_num * conf.pipe_num_per_channel) <> SLR1.io.p2_in(i)
-    //     when(RegNext(master.io.push_or_pull) === 0.U){
-    //         crossbar_array_visit.io.in(i + conf.slr0_channel_num * conf.pipe_num_per_channel)  <> DontCare
-    //         crossbar_array_visit.io.out(i + conf.slr0_channel_num * conf.pipe_num_per_channel) <> DontCare
-    //         crossbar_array_visit.io.in(i + conf.slr0_channel_num * conf.pipe_num_per_channel).valid := false.B
-    //         SLR1.io.p2_out(i)    <> SLR1.io.frontier_in(i)
-    //     }
-    //     .otherwise {                                    // pull mode
-    //         crossbar_array_visit.io.in(i + conf.slr0_channel_num * conf.pipe_num_per_channel)  <> SLR1.io.p2_out(i)
-    //         crossbar_array_visit.io.out(i + conf.slr0_channel_num * conf.pipe_num_per_channel) <> SLR1.io.frontier_in(i)
-    //     }
-    // }
-
+    // crossbar <> SLR2
     for(i <- conf.slr1_channel_num + conf.slr0_channel_num until conf.slr2_channel_num + conf.slr1_channel_num + conf.slr0_channel_num){
         for(j <- 0 until conf.pipe_num_per_channel){
             crossbar_array_mem.io.out(j * conf.channel_num + i)  <> SLR2.io.p2_in((i - conf.slr0_channel_num - conf.slr1_channel_num) * conf.pipe_num_per_channel + j)
@@ -478,19 +419,6 @@ class Top(implicit val conf : HBMGraphConfiguration) extends Module{
         }
     }
 
-    // for(i <- 0 until conf.slr2_channel_num * conf.pipe_num_per_channel) {
-    //     // crossbar_array_mem.io.out(i + (conf.slr0_channel_num + conf.slr1_channel_num) * conf.pipe_num_per_channel) <> SLR2.io.p2_in(i)
-    //     when(RegNext(master.io.push_or_pull) === 0.U){
-    //         crossbar_array_visit.io.in(i + (conf.slr0_channel_num + conf.slr1_channel_num) * conf.pipe_num_per_channel)  <> DontCare
-    //         crossbar_array_visit.io.out(i + (conf.slr0_channel_num + conf.slr1_channel_num) * conf.pipe_num_per_channel) <> DontCare
-    //         crossbar_array_visit.io.in(i + (conf.slr0_channel_num + conf.slr1_channel_num) * conf.pipe_num_per_channel).valid := false.B
-    //         SLR2.io.p2_out(i)    <> SLR2.io.frontier_in(i)
-    //     }
-    //     .otherwise {                                    // pull mode
-    //         crossbar_array_visit.io.in(i + (conf.slr0_channel_num + conf.slr1_channel_num) * conf.pipe_num_per_channel)  <> SLR2.io.p2_out(i)
-    //         crossbar_array_visit.io.out(i + (conf.slr0_channel_num + conf.slr1_channel_num) * conf.pipe_num_per_channel) <> SLR2.io.frontier_in(i)
-    //     }
-    // }
 // --------------------- crossbar end ----------------------------------
 
 
