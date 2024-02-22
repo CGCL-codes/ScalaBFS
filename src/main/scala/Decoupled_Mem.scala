@@ -3,7 +3,6 @@ import chisel3._
 import chisel3.Driver
 import chisel3.util._
 
-// Read neighbour using burst and deal with the situation where neighbour size > 256
 class Read_neighbour(implicit val conf : HBMGraphConfiguration) extends Module {
     val io = IO(new Bundle {
         // input

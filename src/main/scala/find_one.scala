@@ -3,6 +3,8 @@ import chisel3._
 import chisel3.Driver
 import chisel3.util._
 
+// used in model p1
+
 class find_one_8 (implicit val conf : HBMGraphConfiguration) extends Module{
     val io = IO(new Bundle{
         val data = Input(UInt(8.W))

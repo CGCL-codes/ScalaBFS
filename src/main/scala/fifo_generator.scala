@@ -3,6 +3,8 @@ import chisel3._
 import chisel3.Driver
 import chisel3.util._
 
+// FIFOs used in HBM Reader
+// The tcl script that generates the FIFOS corresponding to BlackBox is in ip_generator.tcl
 
 class fifo_generator_writeAddr_IO(val dw : Int)(implicit val conf : HBMGraphConfiguration) extends Bundle{
     val rst = Input(Reset())
@@ -130,7 +132,7 @@ class fifo_generator_src(val dw : Int)(implicit val conf : HBMGraphConfiguration
 	override def desiredName = "fifo_generator_src"
 }
 
-// for Queues
+// for Queues in crossbar
 class fifo_cxb(val dw_cxb : Int, val is_double : Boolean)(implicit val conf : HBMGraphConfiguration) extends BlackBox{
 	val io = IO(new fifo_generator_readData_syn_IO(dw_cxb))
 	override def desiredName = 

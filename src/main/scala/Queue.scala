@@ -6,7 +6,8 @@ import chisel3.util._
 import chisel3.experimental.{DataMirror, Direction, requireIsChiselType}
 import chisel3.internal.naming._  // can't use chisel3_ version because of compile order
 
-
+// FIFOs used for inter-SLR connections
+// The Verilog code of the FIFOS corresponding to BlackBox is in syn_fifo.v
 
 class syn_fifo(val num : Int)(implicit val conf : HBMGraphConfiguration) extends BlackBox with HasBlackBoxPath {
     val io = IO(new Bundle {

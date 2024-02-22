@@ -3,7 +3,7 @@ import chisel3._
 import chisel3.Driver
 import chisel3.util._
 
-// 前一半PG
+// for the PGs placed in SLR1
 
 class SLR1_IO (implicit val conf : HBMGraphConfiguration) extends Bundle{
 

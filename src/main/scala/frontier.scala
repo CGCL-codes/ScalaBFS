@@ -3,14 +3,6 @@ import chisel3._
 import chisel3.Driver
 import chisel3.util._
 
-/*  push -> pull mode
-*   p1 read current_frontier -> p1 read visited_map                         √
-*   p2 read visited_map -> p2 read current_frontier                         √
-*   p2 write next_frontier -> crossbar write visited_map + next_frontier    √
-*   visited_map will be read and write at the same time (write first)
-*/
-
-
 class Frontier_IO(implicit val conf : HBMGraphConfiguration) extends Bundle{
     //Input
     val frontier_count = Flipped(Decoupled(UInt(conf.Data_width.W)))        // input count of the required current_frontier

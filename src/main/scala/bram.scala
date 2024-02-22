@@ -3,6 +3,9 @@ import chisel3._
 import chisel3.Driver
 import chisel3.util._
 
+// BRAM: used for current_frontier, next_frontier and visited_map
+// URAM: used for level
+
 class bram_IO(implicit val conf : HBMGraphConfiguration) extends Bundle{
     val ena = Input(Bool())
     val addra = Input(UInt(conf.Addr_width.W))

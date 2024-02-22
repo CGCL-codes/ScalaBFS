@@ -5,6 +5,9 @@ import chisel3.util._
 
 
 // n*n crossbar, is_double_width is true when src info needed
+// For Data-Relay Crossbar, is_double_width = true
+// For Inter-PE Crossbar, is_double_width = false
+
 class crossbar(val is_double_width: Boolean)(implicit val conf : HBMGraphConfiguration) extends Module{
     def high(n : UInt) : UInt = 
         if(is_double_width){

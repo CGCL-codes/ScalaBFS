@@ -4,6 +4,7 @@ import chisel3.Driver
 import chisel3.util._
 
 // for module memory
+
 class SLR0_Mem_IO (implicit val conf : HBMGraphConfiguration) extends Bundle{
     //Input
     // unified signal

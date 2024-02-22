@@ -1,3 +1,4 @@
+// FIFOs used for inter-SLR connections
 module R_array_index_01_slr0 (
     input clock,
     input reset,
@@ -319,8 +320,6 @@ module R_array_index_02_slr2 (
     output deq_valid,
     input deq_ready,
     output reg [31:0] deq_bits
-    
-    
 );
     reg [31:0] mem [0:7];
     // reg enq_ready_inside;

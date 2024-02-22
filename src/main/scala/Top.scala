@@ -29,13 +29,13 @@ class Top(implicit val conf : HBMGraphConfiguration) extends Module{
 
 
 
-    val master = Module(new master)
-    val SLR0_Mem = Module(new SLR0_Mem)
-    // val SLR0 = Module(new SLR0)
-    val SLR1 = Module(new SLR1)
-    val SLR2 =  Module(new SLR2)
-    val crossbar_array_mem = Module(new crossbar(is_double_width=true))
-    val crossbar_array_visit = Module(new crossbar(is_double_width=false))
+    val master = Module(new master)     // Scheduler
+    val SLR0_Mem = Module(new SLR0_Mem) // memory access
+    // val SLR0 = Module(new SLR0)      // PGs in SLR0
+    val SLR1 = Module(new SLR1)         // PGs in SLR1
+    val SLR2 =  Module(new SLR2)        // PGs in SLR2
+    val crossbar_array_mem = Module(new crossbar(is_double_width=true))     // Data-Relay Crossbar
+    val crossbar_array_visit = Module(new crossbar(is_double_width=false))  // Inter-PE Crossbar
 
 
 //----------------- count kernel time && ap_done ------------------------------
@@ -215,7 +215,7 @@ class Top(implicit val conf : HBMGraphConfiguration) extends Module{
         SLR0_Mem.io.p1_end(i + conf.slr0_channel_num) := p1_end_q_01_slr0(i)
     }
 
-    // 为了与SLR2-SLR0之间的3层缓冲保持一致，SLR1与SLR0之间的连接也用3层
+    // To maintain consistency with the 3-layer buffer between SLR2 and SLR0, the FIFOs connected between SLR1 and SLR0 also have 3 layers
     val uram_out_a_01_slr0_1 = RegInit(VecInit(Seq.fill(conf.slr1_channel_num * conf.pipe_num_per_channel)(0.U(conf.Data_width_uram.W))))
     val uram_out_a_01_slr0_2 = RegInit(VecInit(Seq.fill(conf.slr1_channel_num * conf.pipe_num_per_channel)(0.U(conf.Data_width_uram.W))))
     val uram_out_a_01_slr1 = RegInit(VecInit(Seq.fill(conf.slr1_channel_num * conf.pipe_num_per_channel)(0.U(conf.Data_width_uram.W))))
